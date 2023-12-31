@@ -9,8 +9,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+
+import static java.lang.System.exit;
 
 public class Main {
     public static void main(String[] args) {
@@ -27,11 +32,64 @@ public class Main {
             case "hash-object" -> {
                 hashObjectCommand(args[1], args[2]);
             }
+            case "ls-tree" -> {
+                lsTreeCommand(args[1], args[2]);
+            }
             default -> System.out.println("Unknown command: " + command);
         }
     }
 
+    private static void lsTreeCommand(String param, String tree_sha) {
+        // tree object: tree [content size]\0[Entries having references to other trees and blobs]
+        // tree entry: [mode] [path] 0x00 [sha, 20 bytes]
+        switch (param) {
+            case "--name-only" -> {
+                String header_sha = tree_sha.substring(0, 2);
+                String content_sha = tree_sha.substring(2);
+
+                try (InputStream fileStream = new FileInputStream(".git/objects/" + header_sha + "/" + content_sha);
+                     // to decompress the data
+                     InflaterInputStream inflaterInputStream = new InflaterInputStream(fileStream)) {
+
+                    byte[] data = inflaterInputStream.readAllBytes();
+                    int first_delimeter_idx = Bytes.indexOf(data, (byte) ' ');
+                    int second_delimeter_idx = Bytes.indexOf(data, (byte) 0x00);
+                    String type = new String(data, 0, first_delimeter_idx);
+                    int length = Integer.valueOf(new String(data, first_delimeter_idx + 1, second_delimeter_idx - first_delimeter_idx - 1));
+                    String entry = new String(data, second_delimeter_idx + 1, data.length - (second_delimeter_idx + 1));
+                    if (!"tree".equals(type)) {
+                        System.out.println("Not a tree object: " + tree_sha);
+                        exit(0);
+                    }
+
+                    // recursively parse the tree entries
+                    // tree entry: [mode] [path] 0x00 [sha, 20 bytes]
+                    byte[] entries = Arrays.copyOfRange(data, second_delimeter_idx + 1, data.length);
+                    ArrayList names = new ArrayList<String>();
+                    while (entries.length > 0) {
+                        int space_idx = Bytes.indexOf(entries, (byte)' ');
+                        int null_idx = Bytes.indexOf(entries, (byte) 0x00);
+                        if (null_idx < 0) {
+                            break;
+                        }
+                        names.add(new String(Arrays.copyOfRange(entries, space_idx + 1, null_idx)));
+                        entries = Arrays.copyOfRange(entries, null_idx + 21, entries.length);
+                    }
+                    names.sort((Comparator<String>) (o, t1) -> o.compareToIgnoreCase(t1));
+                    for (Object name: names) {
+                        System.out.println(name);
+                    }
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            default -> System.out.println("Not supported: " + param);
+        }
+    }
+
     private static void hashObjectCommand(String mode, String file) {
+        // blob object format: blob space [length] 0x00 [content]
         switch (mode) {
             case "-w" -> {
                 try (InputStream inputStream = new FileInputStream(file)) {
@@ -63,6 +121,7 @@ public class Main {
     }
 
     private static void catFileCommand(String mode, String blob_sha) {
+        // blob object format: blob space [length] 0x00 [content]
         // https://wyag.thb.lt/#objects
         switch (mode) {
             case "-p" -> {
