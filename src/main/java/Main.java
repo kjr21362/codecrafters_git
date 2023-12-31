@@ -1,5 +1,8 @@
+import com.google.common.primitives.Bytes;
+
 import java.io.*;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.zip.InflaterInputStream;
 
 public class Main {
@@ -25,14 +28,23 @@ public class Main {
         String content_sha = blob_sha.substring(2);
 
         try(InputStream fileStream = new FileInputStream(".git/objects/" + header_sha + "/" + content_sha);
-          InflaterInputStream inflaterInputStream = new InflaterInputStream(fileStream);
-          Reader reader = new InputStreamReader(inflaterInputStream);
-          BufferedReader bufferedReader = new BufferedReader(reader)) {
+          InflaterInputStream inflaterInputStream = new InflaterInputStream(fileStream)) {
 
-          int b;
-          while ((b = bufferedReader.read()) != -1) {
-            System.out.print((char)b);
+          byte[] data = inflaterInputStream.readAllBytes();
+          int first_delimeter_idx = Bytes.indexOf(data, (byte)' ');
+          int second_delimeter_idx = Bytes.indexOf(data, (byte)'\0');
+          String type = new String(data, 0, first_delimeter_idx);
+          int length = Integer.valueOf(new String(data, first_delimeter_idx + 1, second_delimeter_idx - first_delimeter_idx - 1));
+          String content = new String(data, second_delimeter_idx, length);
+
+          switch (type) {
+            case "blob" -> {
+              System.out.println(content);
+            }
+            default -> System.out.println("Not supported: " + type);
           }
+
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
