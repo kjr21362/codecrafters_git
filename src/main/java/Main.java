@@ -35,7 +35,7 @@ public class Main {
           int second_delimeter_idx = Bytes.indexOf(data, (byte) 0x00);
           String type = new String(data, 0, first_delimeter_idx);
           int length = Integer.valueOf(new String(data, first_delimeter_idx + 1, second_delimeter_idx - first_delimeter_idx - 1));
-          String content = new String(data, second_delimeter_idx, length);
+          String content = new String(data, second_delimeter_idx + 1, length);
 
           switch (type) {
             case "blob" -> {
