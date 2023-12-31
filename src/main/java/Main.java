@@ -1,10 +1,15 @@
+import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
 public class Main {
@@ -19,7 +24,41 @@ public class Main {
             case "cat-file" -> {
                 catFileCommand(args[1], args[2]);
             }
+            case "hash-object" -> {
+                hashObjectCommand(args[1], args[2]);
+            }
             default -> System.out.println("Unknown command: " + command);
+        }
+    }
+
+    private static void hashObjectCommand(String mode, String file) {
+        switch (mode) {
+            case "-w" -> {
+                try (InputStream inputStream = new FileInputStream(file)) {
+                    byte[] content = inputStream.readAllBytes();
+                    int length = content.length;
+                    byte[] blob_bytes = Bytes.concat("blob ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
+
+                    MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
+                    byte[] sha = messageDigest.digest(blob_bytes);
+                    String hash = BaseEncoding.base16().lowerCase().encode(sha);
+
+                    File blob_file = new File(".git/objects/" + hash.substring(0, 2) + "/" + hash.substring(2));
+                    com.google.common.io.Files.createParentDirs(blob_file);
+
+                    // BE aware - not closing the output streams properly would cause incorrect content
+                    // written to file (should close deflaterOutputStream first, then FileOutputStream)
+                    try (OutputStream outputStream = new FileOutputStream(blob_file);
+                    DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
+                        deflaterOutputStream.write(blob_bytes);
+                    }
+
+                    System.out.print(hash);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            default -> System.out.println("Not supported: " + mode);
         }
     }
 
