@@ -3,15 +3,19 @@ import com.google.common.primitives.Bytes;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HexFormat;
+import java.util.List;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -30,13 +34,57 @@ public class Main {
                 catFileCommand(args[1], args[2]);
             }
             case "hash-object" -> {
-                hashObjectCommand(args[1], args[2]);
+                System.out.print(hashObjectCommand(args[1], args[2]));
             }
             case "ls-tree" -> {
                 lsTreeCommand(args[1], args[2]);
             }
+            case "write-tree" -> {
+                writeTreeCommand();
+            }
             default -> System.out.println("Unknown command: " + command);
         }
+    }
+
+    private static void writeTreeCommand() {
+        List entries = parseDirToEntries(Path.of(".git"));
+        Tree root = new Tree(entries);
+        String hash = Util.WriteTreeToFile(root);
+        System.out.print(hash);
+    }
+
+    private static List parseDirToEntries(Path path) {
+        List<TreeEntry> entries = new ArrayList<>();
+        File[] files = path.toFile().listFiles();
+
+        for (File file: files) {
+            if (file.isFile()) {
+                TreeEntry.EntryMode mode = file.canExecute() ? TreeEntry.EntryMode.REGULAR_EXECUTABLE : TreeEntry.EntryMode.REGULAR_NON_EXECUTABLE;
+                TreeEntry entry = new TreeEntry(mode, file.getName(), hashObjectCommand("-w", file.getAbsolutePath()));
+                entries.add(entry);
+            } else { // directory
+                List subEntries = parseDirToEntries(file.toPath());
+                Tree subTree = new Tree(subEntries);
+                byte[] bytes = subTree.serialize();
+                byte[] blob_bytes = Bytes.concat("tree ".getBytes(), Integer.toString(bytes.length).getBytes(), new byte[]{0}, bytes);
+                String hash = Util.BytesToHash(blob_bytes);
+                TreeEntry entry = new TreeEntry(TreeEntry.EntryMode.DIRECTORY, file.getName(), hash);
+                entries.add(entry);
+            }
+        }
+        entries.sort(Comparator.comparing(Main::entrySortKey));
+
+        Tree root = new Tree(entries);
+        Util.WriteTreeToFile(root);
+
+        return entries;
+    }
+
+    private static String entrySortKey(TreeEntry entry) {
+        if (entry.getMode().equals(TreeEntry.EntryMode.DIRECTORY)) {
+            return entry.getPath() + "/";
+        }
+        return entry.getPath();
     }
 
     private static void lsTreeCommand(String param, String tree_sha) {
@@ -88,7 +136,7 @@ public class Main {
         }
     }
 
-    private static void hashObjectCommand(String mode, String file) {
+    private static String hashObjectCommand(String mode, String file) {
         // blob object format: blob space [length] 0x00 [content]
         switch (mode) {
             case "-w" -> {
@@ -97,9 +145,7 @@ public class Main {
                     int length = content.length;
                     byte[] blob_bytes = Bytes.concat("blob ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
 
-                    MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-                    byte[] sha = messageDigest.digest(blob_bytes);
-                    String hash = BaseEncoding.base16().lowerCase().encode(sha);
+                    String hash = Util.BytesToHash(blob_bytes);
 
                     File blob_file = new File(".git/objects/" + hash.substring(0, 2) + "/" + hash.substring(2));
                     com.google.common.io.Files.createParentDirs(blob_file);
@@ -111,13 +157,14 @@ public class Main {
                         deflaterOutputStream.write(blob_bytes);
                     }
 
-                    System.out.print(hash);
+                    return hash;
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
             default -> System.out.println("Not supported: " + mode);
         }
+        return "";
     }
 
     private static void catFileCommand(String mode, String blob_sha) {
@@ -145,7 +192,6 @@ public class Main {
                         }
                         default -> System.out.println("Not supported: " + type);
                     }
-
 
                 } catch (IOException e) {
                     throw new RuntimeException(e);
