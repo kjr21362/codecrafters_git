@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +48,7 @@ public class Main {
     }
 
     private static void writeTreeCommand() {
-        List entries = parseDirToEntries(Path.of(".git"));
+        List entries = parseDirToEntries(Paths.get("").toAbsolutePath());
         Tree root = new Tree(entries);
         String hash = Util.WriteTreeToFile(root);
         System.out.print(hash);
@@ -58,6 +59,9 @@ public class Main {
         File[] files = path.toFile().listFiles();
 
         for (File file: files) {
+            if (file.getName().startsWith(".")) {
+                continue;
+            }
             if (file.isFile()) {
                 TreeEntry.EntryMode mode = file.canExecute() ? TreeEntry.EntryMode.REGULAR_EXECUTABLE : TreeEntry.EntryMode.REGULAR_NON_EXECUTABLE;
                 TreeEntry entry = new TreeEntry(mode, file.getName(), hashObjectCommand("-w", file.getAbsolutePath()));
@@ -72,19 +76,12 @@ public class Main {
                 entries.add(entry);
             }
         }
-        entries.sort(Comparator.comparing(Main::entrySortKey));
+        entries.sort(Comparator.comparing(TreeEntry::getPath));
 
         Tree root = new Tree(entries);
         Util.WriteTreeToFile(root);
 
         return entries;
-    }
-
-    private static String entrySortKey(TreeEntry entry) {
-        if (entry.getMode().equals(TreeEntry.EntryMode.DIRECTORY)) {
-            return entry.getPath() + "/";
-        }
-        return entry.getPath();
     }
 
     private static void lsTreeCommand(String param, String tree_sha) {

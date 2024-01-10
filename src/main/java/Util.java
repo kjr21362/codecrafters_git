@@ -1,3 +1,4 @@
+import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
 
 import java.io.File;
@@ -15,19 +16,8 @@ public class Util {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
             byte[] sha = messageDigest.digest(bytes);
-            //return BaseEncoding.base16().lowerCase().encode(sha);
-            return HexFormat.of().formatHex(sha);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static String BytesToDigest(byte[] bytes) {
-        try {
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            byte[] sha = messageDigest.digest(bytes);
-            //return BaseEncoding.base16().lowerCase().encode(sha);
-            return HexFormat.of().formatHex(sha);
+            return BaseEncoding.base16().lowerCase().encode(sha);
+            //return HexFormat.of().formatHex(sha);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -51,7 +41,6 @@ public class Util {
         try (OutputStream outputStream = new FileOutputStream(blob_file);
              DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
             deflaterOutputStream.write(blob_bytes);
-            //System.out.print(hash);
             return hash;
         } catch (Exception e) {
             throw new RuntimeException(e);

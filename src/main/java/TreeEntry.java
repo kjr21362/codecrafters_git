@@ -51,6 +51,7 @@ public class TreeEntry {
 
     public byte[] toBytes() {
         //return Bytes.concat(mode.toString().getBytes(), " ".getBytes(), path.getBytes(), new byte[]{0}, hash.getBytes());
-        return Bytes.concat(mode.toString().getBytes(), " ".getBytes(), path.getBytes(), new byte[]{0}, HexFormat.of().parseHex(hash));
+        // hash should be stored in their binary form, not as hexadecimal strings.
+        return Bytes.concat(mode.toString().getBytes(), " ".getBytes(), path.getBytes(), new byte[]{0}, BaseEncoding.base16().lowerCase().decode(hash));
     }
 }
