@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -43,7 +44,38 @@ public class Main {
             case "write-tree" -> {
                 writeTreeCommand();
             }
+            case "commit-tree" -> {
+                commitTreeCommand(args[1], args[2], args[3], args[4], args[5]);
+            }
             default -> System.out.println("Unknown command: " + command);
+        }
+    }
+
+    private static void commitTreeCommand(String tree_hash, String param_p, String parent_commit_hash, String param_m, String message) {
+        final String author = "test author";
+        Commit commit = new Commit(author, author, tree_hash, parent_commit_hash, LocalDateTime.now(), message);
+
+        byte[] content = commit.toString().getBytes();
+        int length = content.length;
+        byte[] blob_bytes = Bytes.concat("commit ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
+
+        String hash = Util.BytesToHash(blob_bytes);
+
+        File blob_file = new File(".git/objects/" + hash.substring(0, 2) + "/" + hash.substring(2));
+        try {
+            com.google.common.io.Files.createParentDirs(blob_file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // BE aware - not closing the output streams properly would cause incorrect content
+        // written to file (should close deflaterOutputStream first, then FileOutputStream)
+        try (OutputStream outputStream = new FileOutputStream(blob_file);
+             DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
+            deflaterOutputStream.write(blob_bytes);
+            System.out.print(hash);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
