@@ -1,10 +1,8 @@
-import com.google.common.primitives.Bytes;
 import object.Blob;
 import object.Commit;
 import object.GitObject;
 import object.Tree;
 import object.TreeEntry;
-import util.Util;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,10 +72,7 @@ public class Main {
             } else { // directory
                 List subEntries = parseDirToEntries(file.toPath());
                 Tree subTree = new Tree(subEntries);
-                byte[] bytes = subTree.toBytes();
-                byte[] blob_bytes = Bytes.concat("tree ".getBytes(), Integer.toString(bytes.length).getBytes(), new byte[]{0}, bytes);
-                String hash = Util.BytesToHash(blob_bytes);
-                TreeEntry entry = new TreeEntry(TreeEntry.EntryMode.DIRECTORY, file.getName(), hash);
+                TreeEntry entry = new TreeEntry(TreeEntry.EntryMode.DIRECTORY, file.getName(), subTree.getHash());
                 entries.add(entry);
             }
         }
