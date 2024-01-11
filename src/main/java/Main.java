@@ -158,35 +158,13 @@ public class Main {
         return "";
     }
 
-    private static void catFileCommand(String mode, String blob_sha) {
+    private static void catFileCommand(String mode, String hash) {
         // blob object format: blob space [length] 0x00 [content]
         // https://wyag.thb.lt/#objects
         switch (mode) {
             case "-p" -> {
-                String header_sha = blob_sha.substring(0, 2);
-                String content_sha = blob_sha.substring(2);
-
-                try (InputStream fileStream = new FileInputStream(".git/objects/" + header_sha + "/" + content_sha);
-                     // to decompress the data
-                     InflaterInputStream inflaterInputStream = new InflaterInputStream(fileStream)) {
-
-                    byte[] data = inflaterInputStream.readAllBytes();
-                    int first_delimeter_idx = Bytes.indexOf(data, (byte) ' ');
-                    int second_delimeter_idx = Bytes.indexOf(data, (byte) 0x00);
-                    String type = new String(data, 0, first_delimeter_idx);
-                    int length = Integer.valueOf(new String(data, first_delimeter_idx + 1, second_delimeter_idx - first_delimeter_idx - 1));
-                    String content = new String(data, second_delimeter_idx + 1, length);
-
-                    switch (type) {
-                        case "blob" -> {
-                            System.out.print(content);
-                        }
-                        default -> System.out.println("Not supported: " + type);
-                    }
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                Blob blob = (Blob) GitObject.fromHash(hash);
+                System.out.print(blob.getContent());
             }
             default -> System.out.println("Not supported: " + mode);
         }
