@@ -1,4 +1,5 @@
 import com.google.common.primitives.Bytes;
+import object.Blob;
 import object.Commit;
 import object.GitObject;
 import object.Tree;
@@ -150,27 +151,7 @@ public class Main {
         // blob object format: blob space [length] 0x00 [content]
         switch (mode) {
             case "-w" -> {
-                try (InputStream inputStream = new FileInputStream(file)) {
-                    byte[] content = inputStream.readAllBytes();
-                    int length = content.length;
-                    byte[] blob_bytes = Bytes.concat("blob ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
-
-                    String hash = Util.BytesToHash(blob_bytes);
-
-                    File blob_file = new File(".git/objects/" + hash.substring(0, 2) + "/" + hash.substring(2));
-                    com.google.common.io.Files.createParentDirs(blob_file);
-
-                    // BE aware - not closing the output streams properly would cause incorrect content
-                    // written to file (should close deflaterOutputStream first, then FileOutputStream)
-                    try (OutputStream outputStream = new FileOutputStream(blob_file);
-                    DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
-                        deflaterOutputStream.write(blob_bytes);
-                    }
-
-                    return hash;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                return GitObject.writeToFile(Blob.fromFile(Path.of(file)));
             }
             default -> System.out.println("Not supported: " + mode);
         }

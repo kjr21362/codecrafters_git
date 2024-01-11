@@ -1,7 +1,8 @@
 package constants;
 
 public enum ObjectType {
-    COMMIT("commit");
+    COMMIT("commit"),
+    BLOB("blob");
 
     private final String type;
 

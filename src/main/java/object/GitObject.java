@@ -40,4 +40,11 @@ public interface GitObject {
     public byte[] toBytes();
 
     public String getType();
+
+    default String getHash() {
+        byte[] content = this.toBytes();
+        int length = content.length;
+        byte[] blob_bytes = Bytes.concat(this.getType().getBytes(), " ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
+        return Util.BytesToHash(blob_bytes);
+    }
 }
