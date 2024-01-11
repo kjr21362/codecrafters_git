@@ -1,7 +1,6 @@
 package object;
 
 import com.google.common.primitives.Bytes;
-import constants.ObjectType;
 import util.Util;
 
 import java.io.File;
@@ -10,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -33,7 +33,6 @@ public interface GitObject {
         try (OutputStream outputStream = new FileOutputStream(blob_file);
              DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
             deflaterOutputStream.write(blob_bytes);
-            //System.out.print(hash);
             return hash;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -53,11 +52,14 @@ public interface GitObject {
             int second_delimeter_idx = Bytes.indexOf(data, (byte) 0x00);
             String type = new String(data, 0, first_delimeter_idx);
             int length = Integer.valueOf(new String(data, first_delimeter_idx + 1, second_delimeter_idx - first_delimeter_idx - 1));
-            String content = new String(data, second_delimeter_idx + 1, length);
+            byte[] content = Arrays.copyOfRange(data, second_delimeter_idx + 1, second_delimeter_idx + 1 + length);
 
             switch (type) {
                 case "blob" -> {
-                    return new Blob(content);
+                    return Blob.fromBytes(content);
+                }
+                case "tree" -> {
+                    return Tree.fromBytes(content);
                 }
                 default -> System.out.println("Not supported: " + type);
             }
@@ -68,9 +70,9 @@ public interface GitObject {
         return null;
     }
 
-    public byte[] toBytes();
+    byte[] toBytes();
 
-    public String getType();
+    String getType();
 
     default String getHash() {
         byte[] content = this.toBytes();

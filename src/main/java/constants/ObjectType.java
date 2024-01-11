@@ -2,6 +2,7 @@ package constants;
 
 public enum ObjectType {
     COMMIT("commit"),
+    TREE("tree"),
     BLOB("blob");
 
     private final String type;

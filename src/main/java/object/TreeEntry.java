@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HexFormat;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -26,7 +25,7 @@ public class TreeEntry {
             this.mode = mode;
         }
 
-        static EntryMode fromMode(String mode) {
+        static EntryMode fromString(String mode) {
             for (EntryMode m : values()) {
                 if (Objects.equals(m.mode, mode)) {
                     return m;
@@ -52,7 +51,6 @@ public class TreeEntry {
     private String hash;
 
     public byte[] toBytes() {
-        //return Bytes.concat(mode.toString().getBytes(), " ".getBytes(), path.getBytes(), new byte[]{0}, hash.getBytes());
         // hash should be stored in their binary form, not as hexadecimal strings.
         return Bytes.concat(mode.toString().getBytes(), " ".getBytes(), path.getBytes(), new byte[]{0}, BaseEncoding.base16().lowerCase().decode(hash));
     }
