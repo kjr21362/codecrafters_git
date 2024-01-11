@@ -1,9 +1,12 @@
-import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
+import object.Commit;
+import object.GitObject;
+import object.Tree;
+import object.TreeEntry;
+import util.Util;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,12 +14,10 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -55,28 +56,8 @@ public class Main {
         final String author = "test author";
         Commit commit = new Commit(author, author, tree_hash, parent_commit_hash, LocalDateTime.now(), message);
 
-        byte[] content = commit.toString().getBytes();
-        int length = content.length;
-        byte[] blob_bytes = Bytes.concat("commit ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
-
-        String hash = Util.BytesToHash(blob_bytes);
-
-        File blob_file = new File(".git/objects/" + hash.substring(0, 2) + "/" + hash.substring(2));
-        try {
-            com.google.common.io.Files.createParentDirs(blob_file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        // BE aware - not closing the output streams properly would cause incorrect content
-        // written to file (should close deflaterOutputStream first, then FileOutputStream)
-        try (OutputStream outputStream = new FileOutputStream(blob_file);
-             DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
-            deflaterOutputStream.write(blob_bytes);
-            System.out.print(hash);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        String hash = GitObject.writeToFile(commit);
+        System.out.print(hash);
     }
 
     private static void writeTreeCommand() {

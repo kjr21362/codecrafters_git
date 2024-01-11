@@ -1,31 +1,19 @@
-import com.google.common.io.BaseEncoding;
+package object;
+
 import com.google.common.primitives.Bytes;
+import util.Util;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.zip.DeflaterOutputStream;
 
-public class Util {
-
-    public static String BytesToHash(byte[] bytes) {
-        try {
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-            byte[] sha = messageDigest.digest(bytes);
-            return BaseEncoding.base16().lowerCase().encode(sha);
-            //return HexFormat.of().formatHex(sha);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static String WriteTreeToFile(Tree root) {
-        byte[] bytes = root.serialize();
-        byte[] blob_bytes = Bytes.concat("tree ".getBytes(), Integer.toString(bytes.length).getBytes(), new byte[]{0}, bytes);
+public interface GitObject {
+    static String writeToFile(GitObject object) {
+        byte[] content = object.toBytes();
+        int length = content.length;
+        byte[] blob_bytes = Bytes.concat(object.getType().getBytes(), " ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
 
         String hash = Util.BytesToHash(blob_bytes);
 
@@ -41,9 +29,15 @@ public class Util {
         try (OutputStream outputStream = new FileOutputStream(blob_file);
              DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
             deflaterOutputStream.write(blob_bytes);
+            //System.out.print(hash);
             return hash;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
     }
+
+    public byte[] toBytes();
+
+    public String getType();
 }

@@ -1,3 +1,5 @@
+package object;
+
 import com.google.common.primitives.Bytes;
 import lombok.AllArgsConstructor;
 
