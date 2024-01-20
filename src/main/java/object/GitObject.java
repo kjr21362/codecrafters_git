@@ -18,28 +18,6 @@ import java.util.zip.InflaterInputStream;
 public interface GitObject {
     static String writeToFile(GitObject object) {
         return writeToFile(object, Path.of("").toAbsolutePath());
-        /*byte[] content = object.toBytes();
-        int length = content.length;
-        byte[] blob_bytes = Bytes.concat(object.getType().getBytes(), " ".getBytes(), Integer.toString(length).getBytes(), new byte[]{0}, content);
-
-        String hash = Util.BytesToHash(blob_bytes);
-
-        File blob_file = new File(".git/objects/" + hash.substring(0, 2) + "/" + hash.substring(2));
-        try {
-            com.google.common.io.Files.createParentDirs(blob_file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        // BE aware - not closing the output streams properly would cause incorrect content
-        // written to file (should close deflaterOutputStream first, then FileOutputStream)
-        try (OutputStream outputStream = new FileOutputStream(blob_file);
-             DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(outputStream)) {
-            deflaterOutputStream.write(blob_bytes);
-            return hash;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }*/
     }
 
     static String writeToFile(GitObject object, Path root_dir) {

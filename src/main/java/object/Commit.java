@@ -60,7 +60,6 @@ public class Commit implements GitObject {
     }
 
     public static Commit fromBytes(byte[] bytes) {
-        Commit commit = new Commit();
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         Map<String, String> headers = new HashMap<>();
         StringBuffer stringBuffer = new StringBuffer();
@@ -92,7 +91,6 @@ public class Commit implements GitObject {
         }
         String author = matcher.group(1);
         String author_email = matcher.group(2);
-        //LocalDateTime author_localDateTime = LocalDateTime.parse(matcher.group(3));
         Instant instant = Instant.ofEpochSecond(Long.parseLong(matcher.group(3)));
         ZoneId zoneId = ZoneId.of(matcher.group(4));
         ZonedDateTime author_zonedDateTime = ZonedDateTime.ofInstant(instant, zoneId);
@@ -103,7 +101,6 @@ public class Commit implements GitObject {
         }
         String committer = matcher.group(1);
         String committer_email = matcher.group(2);
-        //LocalDateTime committer_localDateTime = LocalDateTime.parse(matcher.group(3));
         Instant committer_instant = Instant.ofEpochSecond(Long.parseLong(matcher.group(3)));
         ZoneId committer_zoneId = ZoneId.of(matcher.group(4));
         ZonedDateTime committer_zonedDateTime = ZonedDateTime.ofInstant(committer_instant, committer_zoneId);

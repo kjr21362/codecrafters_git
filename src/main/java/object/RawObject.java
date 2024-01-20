@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.WeakHashMap;
 import java.util.zip.InflaterInputStream;
 
 @AllArgsConstructor
