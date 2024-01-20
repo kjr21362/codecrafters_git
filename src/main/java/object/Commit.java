@@ -20,13 +20,13 @@ import java.util.regex.Pattern;
 public class Commit implements GitObject {
 
     public static final Pattern AUTHOR_PATTERN = Pattern.compile("^(.*?) <(.*?)> (\\d+) ((?:\\+|-)\\d+)$");
-
+    
     @Getter
     @Setter
-    private String author;
+    private AuthorSignature author;
     @Getter
     @Setter
-    private String committer;
+    private AuthorSignature committer;
     @Getter
     @Setter
     private String tree_hash;
@@ -35,18 +35,12 @@ public class Commit implements GitObject {
     private String parent_commit_hash;
     @Getter
     @Setter
-    private ZonedDateTime author_timestamp;
-    @Getter
-    @Setter
-    private ZonedDateTime committer_timestamp;
-    @Getter
-    @Setter
     private String message;
 
     @Override
     public String toString() {
-        return String.format("tree %s\nparent %s\nauthor %s %s\ncommitter %s %s\n\n%s\n",
-                tree_hash, parent_commit_hash, author, author_timestamp.toString(), author, committer_timestamp.toString(), message);
+        return String.format("tree %s\nparent %s\nauthor %s\ncommitter %s\n\n%s\n",
+                tree_hash, parent_commit_hash, author, committer, message);
     }
 
     @Override
@@ -82,29 +76,21 @@ public class Commit implements GitObject {
 
         byte[] message = new byte[buffer.remaining()];
         buffer.get(message);
-        String tree_hash = headers.get("tree");
-        String parent_hash = headers.get("parent");
 
-        Matcher matcher = AUTHOR_PATTERN.matcher(headers.get("author"));
+        AuthorSignature author = parseAuthorSignature(headers.get("author"));
+        AuthorSignature committer = parseAuthorSignature(headers.get("committer"));
+
+        return new Commit(author, committer, headers.get("tree"), headers.get("parent"), new String(message));
+    }
+
+    private static AuthorSignature parseAuthorSignature(String author) {
+        Matcher matcher = AUTHOR_PATTERN.matcher(author);
         if (!matcher.find()) {
-            throw new IllegalArgumentException("Invalid author: " + headers.get("author"));
+            throw new IllegalArgumentException("Invalid author: " + author);
         }
-        String author = matcher.group(1);
-        String author_email = matcher.group(2);
+
         Instant instant = Instant.ofEpochSecond(Long.parseLong(matcher.group(3)));
         ZoneId zoneId = ZoneId.of(matcher.group(4));
-        ZonedDateTime author_zonedDateTime = ZonedDateTime.ofInstant(instant, zoneId);
-
-        matcher = AUTHOR_PATTERN.matcher(headers.get("committer"));
-        if (!matcher.find()) {
-            throw new IllegalArgumentException("Invalid committer: " + headers.get("committer"));
-        }
-        String committer = matcher.group(1);
-        String committer_email = matcher.group(2);
-        Instant committer_instant = Instant.ofEpochSecond(Long.parseLong(matcher.group(3)));
-        ZoneId committer_zoneId = ZoneId.of(matcher.group(4));
-        ZonedDateTime committer_zonedDateTime = ZonedDateTime.ofInstant(committer_instant, committer_zoneId);
-
-        return new Commit(author + " " + author_email, committer + " " + committer_email, tree_hash, parent_hash, author_zonedDateTime, committer_zonedDateTime, new String(message));
+        return new AuthorSignature(matcher.group(1), matcher.group(2), ZonedDateTime.ofInstant(instant, zoneId));
     }
 }

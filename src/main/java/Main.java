@@ -1,6 +1,7 @@
 import com.google.common.primitives.Bytes;
 import constants.DeltaType;
 import constants.ObjectType;
+import object.AuthorSignature;
 import object.Blob;
 import object.Commit;
 import object.DeltaInstructionObject;
@@ -400,9 +401,8 @@ public class Main {
     }
 
     private static void commitTreeCommand(String tree_hash, String param_p, String parent_commit_hash, String param_m, String message) {
-        final String author = "test author";
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        Commit commit = new Commit(author, author, tree_hash, parent_commit_hash, zonedDateTime, zonedDateTime, message);
+        AuthorSignature author = new AuthorSignature("test author", "testauthor@test.com", ZonedDateTime.now());
+        Commit commit = new Commit(author, author, tree_hash, parent_commit_hash, message);
 
         String hash = GitObject.writeToFile(commit, Path.of("").toAbsolutePath());
         System.out.print(hash);
