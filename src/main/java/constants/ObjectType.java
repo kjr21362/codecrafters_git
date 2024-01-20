@@ -1,6 +1,7 @@
 package constants;
 
 public enum ObjectType {
+    DELTIFIED("deltified"),
     COMMIT("commit"),
     TREE("tree"),
     BLOB("blob");

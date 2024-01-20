@@ -7,6 +7,7 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 
 @AllArgsConstructor
@@ -26,8 +27,10 @@ public class Tree implements GitObject {
             }
             String mode = new String(Arrays.copyOfRange(entries, 0, space_idx));
             String name = new String(Arrays.copyOfRange(entries, space_idx + 1, null_idx));
-            String entry_hash = new String(Arrays.copyOfRange(entries, null_idx + 1, null_idx + 21));
-            entryList.add(new TreeEntry(TreeEntry.EntryMode.fromString(mode), name, entry_hash));
+            //String entry_hash = new String(Arrays.copyOfRange(entries, null_idx + 1, null_idx + 21));
+            byte[] entry_bytes = Arrays.copyOfRange(entries, null_idx + 1, null_idx + 21);
+            //entryList.add(new TreeEntry(TreeEntry.EntryMode.fromString(mode), name, entry_hash));
+            entryList.add(new TreeEntry(TreeEntry.EntryMode.fromString(mode), name, HexFormat.of().formatHex(entry_bytes)));
             entries = Arrays.copyOfRange(entries, null_idx + 21, entries.length);
         }
 
